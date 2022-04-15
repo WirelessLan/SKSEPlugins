@@ -1,4 +1,4 @@
-LIBRARY	"CustomMeshesPathF4"
+LIBRARY	"CustomMeshesPathSSE"
 EXPORTS
-F4SEPlugin_Query
-F4SEPlugin_Load
+SKSEPlugin_Query
+SKSEPlugin_Load

@@ -1,6 +1,6 @@
 #include "Global.h"
 
-std::string rulePath{ "Data\\F4SE\\Plugins\\"  PLUGIN_NAME  "_Rules.txt" };
+std::string rulePath{ "Data\\SKSE\\Plugins\\"  PLUGIN_NAME  "_Rules.txt" };
 time_t ruleLoadedTime = 0;
 
 std::unordered_map<UInt32, std::string> actorRules;
