@@ -6,25 +6,24 @@
 #include "Global.h"
 
 PluginHandle			g_pluginHandle = kPluginHandle_Invalid;
-SKSEMessagingInterface* g_messaging = NULL;
+F4SEMessagingInterface* g_messaging = NULL;
 
-void OnSKSEMessage(SKSEMessagingInterface::Message* msg) {
+void OnF4SEMessage(F4SEMessagingInterface::Message* msg) {
 	switch (msg->type) {
-	case SKSEMessagingInterface::kMessage_DataLoaded:
-		SetModelProcessor();
-		break;
-	case SKSEMessagingInterface::kMessage_NewGame:
-	case SKSEMessagingInterface::kMessage_PreLoadGame:
-		_MESSAGE("Load Rules...");
-		LoadRules();
+	case F4SEMessagingInterface::kMessage_NewGame:
+	case F4SEMessagingInterface::kMessage_PreLoadGame:
+		if (ShouldLoadRules()) {
+			_MESSAGE("Load Rules...");
+			LoadRules();
+		}
 		break;
 	}
 }
 
 /* Plugin Query */
 extern "C" {
-	bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info) {
-		std::string logPath{ "\\My Games\\Skyrim Special Edition\\SKSE\\" PLUGIN_NAME ".log" };
+	bool F4SEPlugin_Query(const F4SEInterface* f4se, PluginInfo* info) {
+		std::string logPath{ "\\My Games\\Fallout4\\F4SE\\" PLUGIN_NAME ".log" };
 		gLog.OpenRelative(CSIDL_MYDOCUMENTS, logPath.c_str());
 		gLog.SetPrintLevel(IDebugLog::kLevel_Error);
 		gLog.SetLogLevel(IDebugLog::kLevel_DebugMessage);
@@ -34,15 +33,15 @@ extern "C" {
 		info->name = PLUGIN_NAME;
 		info->version = PLUGIN_VERSION;
 
-		if (skse->runtimeVersion != RUNTIME_VERSION_1_5_97) {
-			_MESSAGE("unsupported runtime version %d", skse->runtimeVersion);
+		if (f4se->runtimeVersion != RUNTIME_VERSION_1_10_163) {
+			_MESSAGE("unsupported runtime version %d", f4se->runtimeVersion);
 			return false;
 		}
 
-		g_pluginHandle = skse->GetPluginHandle();
+		g_pluginHandle = f4se->GetPluginHandle();
 
 		// Get the messaging interface
-		g_messaging = (SKSEMessagingInterface*)skse->QueryInterface(kInterface_Messaging);
+		g_messaging = (F4SEMessagingInterface*)f4se->QueryInterface(kInterface_Messaging);
 		if (!g_messaging) {
 			_MESSAGE("couldn't get messaging interface");
 			return false;
@@ -51,7 +50,7 @@ extern "C" {
 		return true;
 	}
 
-	bool SKSEPlugin_Load(const SKSEInterface* f4se) {
+	bool F4SEPlugin_Load(const F4SEInterface* f4se) {
 		_MESSAGE("%s Loaded", PLUGIN_NAME);
 
 		if (!g_branchTrampoline.Create(1024 * 64)) {
@@ -65,10 +64,11 @@ extern "C" {
 		}
 
 		if (g_messaging)
-			g_messaging->RegisterListener(g_pluginHandle, "SKSE", OnSKSEMessage);
+			g_messaging->RegisterListener(g_pluginHandle, "F4SE", OnF4SEMessage);
 
 		Hooks_ActorChangeMeshes();
 		Hooks_SetModelPath();
+		Hooks_GetNiObject();
 
 		return true;
 	}

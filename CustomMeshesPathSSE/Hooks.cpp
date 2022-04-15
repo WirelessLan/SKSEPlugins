@@ -2,11 +2,14 @@
 
 std::unordered_map<std::thread::id, std::pair<std::string, std::string>> g_acThreadMap;
 
-RelocAddr <_ActorChangeMeshes> ActorChangeMeshes_HookTarget(0x364FF0);
+RelocAddr <_ActorChangeMeshes> ActorChangeMeshes_HookTarget(0x5B93F0);
 _ActorChangeMeshes ActorChangeMeshes_Original;
 
-RelocAddr <_SetModelPath> SetModelPath_HookTarget(0xC444C0);
+RelocAddr <_SetModelPath> SetModelPath_HookTarget(0x1B7CD40);
 _SetModelPath SetModelPath_Original;
+
+RelocAddr <uintptr_t> GetNiObject_HookTarget(0x02E14818 + 0x20);
+_GetNiObject GetNiObject_Original;
 
 void ActorChangeMeshes_Hook(void* arg1, Actor* arg2) {
 	bool isTarget = false;
@@ -44,7 +47,7 @@ const char* SetModelPath_Hook(void* arg1, UInt64 arg2, const char* subPath, cons
 
 			std::string currentCustomPrefixPath;
 			std::string fullPath;
-
+			
 			if (it->second.second != "") {
 				fullPath = std::string(prefixPath + it->second.second + subPathStr.c_str());
 				if (IsFileExists(fullPath)) {
@@ -66,90 +69,46 @@ const char* SetModelPath_Hook(void* arg1, UInt64 arg2, const char* subPath, cons
 	return SetModelPath_Original(arg1, arg2, subPath, prefixPath);
 }
 
-NiExtraData* FindBodyTri(NiAVObject *node, const BSFixedString& name) {
-	if (!node)
-		return nullptr;
+void* GetNiObject_Hook(NiAVObject* node) {
+	std::thread::id threadId = std::this_thread::get_id();
 
-	NiExtraData* triData = node->GetExtraData(name);
-	if (triData)
-		return triData;
-
-	NiNode* niNode = node->GetAsNiNode();
-	if (niNode) {
-		for (UInt32 ii = 0; ii < niNode->m_children.m_size; ii++) {
-			if (niNode->m_children.m_data[ii]) {
-				triData = FindBodyTri(niNode->m_children.m_data[ii], name);
-				if (triData)
-					return triData;
-			}
-		}
-	}
-
-	return nullptr;
-}
-
-class CustomStringExtraData : public NiExtraData {
-public:
-	CustomStringExtraData();
-	~CustomStringExtraData();
-
-	BSFixedString m_pString;	// 18
-};
-
-class BodyMorphProcessor : public BSModelDB::BSModelProcessor {
-public:
-	BodyMorphProcessor(BSModelDB::BSModelProcessor* oldProcessor) : m_oldProcessor(oldProcessor) { }
-
-	virtual void Process(BSModelDB::ModelData* modelData, const char* modelName, NiAVObject** root, UInt32* typeOut) {
-		std::thread::id threadId = std::this_thread::get_id();
-
-		auto it = g_acThreadMap.find(threadId);
-		if (it != g_acThreadMap.end()) {
-			NiAVObject* node = root ? *root : nullptr;
-			if (node) {
-				node->IncRef();
-				NiStringExtraData* stringData = ni_cast(FindBodyTri(node, "BODYTRI"), NiStringExtraData);
-				if (stringData) {
+	auto it = g_acThreadMap.find(threadId);
+	if (it != g_acThreadMap.end()) {
+		if (node) {
+			node->IncRef();
+			NiExtraData* bodyMorphs = node->GetExtraData("BODYTRI");
+			if (bodyMorphs) {
+				NiStringExtraData* stringData = dynamic_cast<NiStringExtraData*>(bodyMorphs);
+				if (stringData)	{
 					stringData->IncRef();
 
-					CustomStringExtraData* cStringData = (CustomStringExtraData*)stringData;
 					bool found = false;
 					std::string fullPath, subPath;
-
+					
 					if (it->second.second != "") {
-						subPath = it->second.second + std::string(cStringData->m_pString.c_str());
+						subPath = it->second.second + std::string(stringData->m_string.c_str());
 						fullPath = "meshes\\" + subPath;
 						if (IsFileExists(fullPath)) {
 							found = true;
-							cStringData->m_pString = BSFixedString(subPath.c_str());
+							stringData->m_string = BSFixedString(subPath.c_str());
 						}
 					}
 
 					if (!found && it->second.first != "") {
-						subPath = it->second.first + std::string(cStringData->m_pString.c_str());
+						subPath = it->second.first + std::string(stringData->m_string.c_str());
 						fullPath = "meshes\\" + subPath;
 						if (IsFileExists(fullPath))
-							cStringData->m_pString = BSFixedString(subPath.c_str());
+							stringData->m_string = BSFixedString(subPath.c_str());
 					}
 
 					stringData->DecRef();
 				}
-				node->DecRef();
 			}
+			node->DecRef();
 		}
-
-		if (m_oldProcessor)
-			m_oldProcessor->Process(modelData, modelName, root, typeOut);
 	}
 
-	DEFINE_STATIC_HEAP(Heap_Allocate, Heap_Free)
-
-protected:
-	BSModelDB::BSModelProcessor* m_oldProcessor;
-};
-
-void SetModelProcessor() {
-	(*g_TESProcessor) = new BodyMorphProcessor(*g_TESProcessor);
+	return GetNiObject_Original(node);
 }
 
 void Hooks_ActorChangeMeshes() {
@@ -158,13 +117,13 @@ void Hooks_ActorChangeMeshes() {
 		{
 			Xbyak::Label retnLabel;
 
+			mov(ptr[rsp + 0x10], rdx);
 			mov(ptr[rsp + 0x08], rcx);
-			push(rbp);
 
 			jmp(ptr[rip + retnLabel]);
 
 			L(retnLabel);
-			dq(ActorChangeMeshes_HookTarget.GetUIntPtr() + 0x06);
+			dq(ActorChangeMeshes_HookTarget.GetUIntPtr() + 0x0A);
 		}
 	};
 	void* codeBuf = g_localTrampoline.StartAlloc();
@@ -199,4 +158,9 @@ void Hooks_SetModelPath() {
 	SetModelPath_Original = (_SetModelPath)codeBuf;
 
 	g_branchTrampoline.Write6Branch(SetModelPath_HookTarget.GetUIntPtr(), (uintptr_t)SetModelPath_Hook);
+}
+
+void Hooks_GetNiObject() {
+	GetNiObject_Original = *(_GetNiObject*)(GetNiObject_HookTarget.GetUIntPtr());
+	SafeWrite64(GetNiObject_HookTarget, (uintptr_t)GetNiObject_Hook);
 }

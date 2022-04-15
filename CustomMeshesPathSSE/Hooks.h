@@ -3,7 +3,8 @@
 
 typedef void (*_ActorChangeMeshes)(void*, Actor*);
 typedef const char* (*_SetModelPath)(void*, UInt64, const char*, const char*);
+typedef void* (*_GetNiObject)(NiAVObject*);
 
 void Hooks_ActorChangeMeshes();
 void Hooks_SetModelPath();
-void SetModelProcessor();
+void Hooks_GetNiObject();
