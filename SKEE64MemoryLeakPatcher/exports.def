@@ -1,4 +1,0 @@
-LIBRARY	"SKEE64MemoryLeakPatcher"
-EXPORTS
-SKSEPlugin_Query
-SKSEPlugin_Load
