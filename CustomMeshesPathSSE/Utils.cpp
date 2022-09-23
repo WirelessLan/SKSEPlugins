@@ -1,30 +1,42 @@
 #include "Global.h"
 
-inline void ltrim(std::string& s) {
+void trim(std::string& s) {
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
 		return !std::isspace(ch);
 		}));
-}
-
-inline void rtrim(std::string& s) {
 	s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
 		return !std::isspace(ch);
 		}).base(), s.end());
 }
 
-void trim(std::string& s) {
-	ltrim(s);
-	rtrim(s);
+bool IsFileExists(const std::string& path) {
+	if (path.empty())
+		return false;
+	DWORD dwAttrib = GetFileAttributes(path.c_str());
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool IsFileExists(const std::string& path) {
-	if (path == "")
-		return false;
+std::string GetFileExt(const std::string& fname) {
+	size_t idx = fname.rfind('.');
+	if (idx == std::string::npos)
+		return std::string();
+	return fname.substr(idx + 1);
+}
 
-	std::string fullPath = "Data\\" + path;
+TESForm* GetActorBaseForm(Actor* actor) {
+	if (!actor)
+		return nullptr;
 
-	DWORD dwAttrib = GetFileAttributes(fullPath.c_str());
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	BSExtraData* extraData = actor->extraData.m_data;
+	while (extraData) {
+		ExtraLeveledCreature* extraLeveledCreature = DYNAMIC_CAST(extraData, BSExtraData, ExtraLeveledCreature);
+		if (extraLeveledCreature)
+			return extraLeveledCreature->baseForm;
+
+		extraData = extraData->next;
+	}
+
+	return nullptr;
 }
 
 TESForm* GetFormFromIdentifier(const std::string& pluginName, const std::string& formIdStr) {

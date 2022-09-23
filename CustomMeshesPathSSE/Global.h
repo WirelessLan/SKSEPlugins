@@ -1,6 +1,8 @@
 #pragma once
 #include <skse64/PluginAPI.h>
 #include <skse64/GameData.h>
+#include <skse64/GameExtraData.h>
+#include <skse64/GameRTTI.h>
 #include <skse64/BSModelDB.h>
 #include <skse64/NiNodes.h>
 #include <skse64/NiExtraData.h>
@@ -11,6 +13,7 @@
 
 #include <fstream>
 #include <unordered_map>
+#include <mutex>
 #include <algorithm>
 #include <thread>
 
@@ -19,4 +22,4 @@
 #include "Utils.h"
 
 #define PLUGIN_NAME	"CustomMeshesPathSSE"
-#define PLUGIN_VERSION	MAKE_EXE_VERSION(0, 6, 1)
+#define PLUGIN_VERSION	MAKE_EXE_VERSION(0, 6, 2)
