@@ -1,0 +1,4 @@
+LIBRARY	"SaveCountManagerSSE"
+EXPORTS
+SKSEPlugin_Query
+SKSEPlugin_Load
