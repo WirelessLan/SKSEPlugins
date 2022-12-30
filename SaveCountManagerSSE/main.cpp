@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #define PLUGIN_NAME	"SaveCountManagerSSE"
+#define PLUGIN_VERSION MAKE_EXE_VERSION(1, 0, 0)
 
 PluginHandle			g_pluginHandle = kPluginHandle_Invalid;
 SKSEMessagingInterface* g_messaging = NULL;
@@ -304,7 +305,7 @@ extern "C" {
 		// populate info structure
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = PLUGIN_NAME;
-		info->version = MAKE_EXE_VERSION(1, 0, 0);
+		info->version = PLUGIN_VERSION;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
