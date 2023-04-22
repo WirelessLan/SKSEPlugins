@@ -1,11 +1,11 @@
 #pragma once
 #include <skse64/PluginAPI.h>
 #include <skse64/GameData.h>
-#include <skse64/GameExtraData.h>
 #include <skse64/GameRTTI.h>
+#include <skse64/GameExtraData.h>
+#include <skse64/NiExtraData.h>
 #include <skse64/BSModelDB.h>
 #include <skse64/NiNodes.h>
-#include <skse64/NiExtraData.h>
 #include <skse64/xbyak/xbyak.h>
 
 #include <skse64_common/skse_version.h>
@@ -17,9 +17,13 @@
 #include <algorithm>
 #include <thread>
 
-#include "CACS.h"
+#include "CaseInsensitiveMap.h"
+
 #include "Hooks.h"
+#include "CACS.h"
 #include "Utils.h"
 
 #define PLUGIN_NAME	"CustomMeshesPathSSE"
-#define PLUGIN_VERSION	MAKE_EXE_VERSION(0, 6, 2)
+#define PLUGIN_VERSION	MAKE_EXE_VERSION(0, 7, 0)
+
+extern bool bDebug;
