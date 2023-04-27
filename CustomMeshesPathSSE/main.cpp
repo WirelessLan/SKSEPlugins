@@ -1,9 +1,11 @@
-// F4SE
-#include "common/IDebugLog.h"  // IDebugLog
+#include <ShlObj.h>
 
-#include <shlobj.h>	// CSIDL_MYCODUMENTS
+#include <skse64/PluginAPI.h>
+#include <skse64_common/BranchTrampoline.h>
 
 #include "Global.h"
+#include "CACS.h"
+#include "Hooks.h"
 
 PluginHandle			g_pluginHandle = kPluginHandle_Invalid;
 SKSEMessagingInterface* g_messaging = NULL;
@@ -11,8 +13,8 @@ SKSEMessagingInterface* g_messaging = NULL;
 bool bDebug = false;
 
 void ReadConfig() {
+	const std::string configPath{ "Data\\SKSE\\Plugins\\" PLUGIN_NAME ".ini" };
 	char result[256] = { 0 };
-	std::string configPath{ "Data\\SKSE\\Plugins\\" PLUGIN_NAME ".ini" };
 	GetPrivateProfileString("Debug", "bDebug", NULL, result, sizeof(result), configPath.c_str());
 
 	std::string sResult = result;
@@ -26,12 +28,12 @@ void OnSKSEMessage(SKSEMessagingInterface::Message* msg) {
 	switch (msg->type) {
 	case SKSEMessagingInterface::kMessage_NewGame:
 	case SKSEMessagingInterface::kMessage_PreLoadGame:
-		SetModelProcessor();
-		ClearPathMap();
+		Hooks::SetModelProcessor();
+		Hooks::ClearPathMap();
 
-		if (ShouldLoadRules()) {
+		if (CACS::ShouldLoadRules()) {
 			_MESSAGE("Loading Rules...");
-			LoadRules();
+			CACS::LoadRules();
 		}
 		break;
 	}
@@ -85,8 +87,8 @@ extern "C" {
 		if (g_messaging)
 			g_messaging->RegisterListener(g_pluginHandle, "SKSE", OnSKSEMessage);
 
-		Hooks_ReplaceRefModel();
-		Hooks_PrepareName();
+		Hooks::Hooks_ReplaceRefModel();
+		Hooks::Hooks_PrepareName();
 
 		return true;
 	}
